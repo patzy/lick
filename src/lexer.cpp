@@ -29,15 +29,24 @@ tokenize(const char* str,size_t len) {
   token_t *cur_tok = token;
   int32_t atom_start = -1;
   int32_t string_start = -1;
+  int32_t comment_start = -1;
   while (i<len) {
     char c = str[i];
-    // skip characters
+    // in a string skip until end quote
+    // in a comment skip until EOL
+    // skip delimiters
     if (is_delim(c)) {
       if (atom_start != -1) {
         token_t *tok = make_token(TOK_ATOM,str+atom_start,str+i);
         cur_tok->next = tok;
         cur_tok = tok;
         atom_start = -1;
+      }
+      if ((c == '\r' || c == '\n') && comment_start != -1) {
+        token_t *tok = make_token(TOK_COMMENT,str+comment_start,str+i+1);
+        cur_tok->next = tok;
+        cur_tok = tok;
+        comment_start = -1;
       }
     }
     else {
@@ -52,33 +61,50 @@ tokenize(const char* str,size_t len) {
           string_start = -1;
         }
       }
-      else if ((string_start == -1) && (atom_start == -1)) {
+      else if (string_start == -1 && c == ';') {
+        if (atom_start != -1) {
+          token_t *tok = make_token(TOK_ATOM,str+atom_start,str+i);
+          cur_tok->next = tok;
+          cur_tok = tok;
+          atom_start = -1;
+        }
+        comment_start = i;
+      }
+      else if ((string_start == -1) && (comment_start == -1) && (atom_start == -1)) {
         atom_start = i;
       }
     }
-    if (c == '(') {
-      token_t *tok = make_token(TOK_LPAREN,str+i,str+i+1);
-      cur_tok->next = tok;
-      cur_tok = tok;
-    }
-    if (c == ')') {
-      token_t *tok = make_token(TOK_RPAREN,str+i,str+i+1);
-      cur_tok->next = tok;
-      cur_tok = tok;
-    }
-    if (c == '\'') {
-      token_t *tok = make_token(TOK_QUOTE,str+i,str+i+1);
-      cur_tok->next = tok;
-      cur_tok = tok;
+    if (comment_start == -1) {
+      if (c == '(') {
+        token_t *tok = make_token(TOK_LPAREN,str+i,str+i+1);
+        cur_tok->next = tok;
+        cur_tok = tok;
+      }
+      if (c == ')') {
+        token_t *tok = make_token(TOK_RPAREN,str+i,str+i+1);
+        cur_tok->next = tok;
+        cur_tok = tok;
+      }
+      if (c == '\'') {
+        token_t *tok = make_token(TOK_QUOTE,str+i,str+i+1);
+        cur_tok->next = tok;
+        cur_tok = tok;
+      }
     }
     ++i;
   }
-  // read a single atom
+  // read what's remaining
   if (atom_start != -1) {
     token_t *tok = make_token(TOK_ATOM,str+atom_start,str+i);
     cur_tok->next = tok;
     cur_tok = tok;
     atom_start = -1;
+  }
+  if (comment_start != -1) {
+    token_t *tok = make_token(TOK_COMMENT,str+comment_start,str+i+1);
+    cur_tok->next = tok;
+    cur_tok = tok;
+    comment_start = -1;
   }
   return token;
 }
@@ -111,6 +137,16 @@ token_print(token_t *token) {
       printf("]\n");
       break;
     case TOK_ATOM:
+      printf("TOK_ATOM ");
+      c = tok->start;
+      while (c!=tok->end) {
+        printf("%c",*c);
+        c++;
+      }
+      printf("\n");
+      break;
+    case TOK_COMMENT:
+      printf("TOK_COMMENT ");
       c = tok->start;
       while (c!=tok->end) {
         printf("%c",*c);

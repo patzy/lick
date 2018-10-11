@@ -13,6 +13,7 @@ void
 ep(const char* input,lick_env_t *env) {
   token_t *tok = tokenize(input,strlen(input));
   if (tok) {
+    //token_print(tok);
     lick_t *ast = lick_parse(tok);
     if (!ast) {
       printf("Parse error\n");

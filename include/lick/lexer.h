@@ -8,7 +8,8 @@ typedef enum {
   TOK_LPAREN,
   TOK_RPAREN,
   TOK_QUOTE,
-  TOK_ATOM
+  TOK_ATOM,
+  TOK_COMMENT
 } token_type;
 
 typedef struct _token_t {
