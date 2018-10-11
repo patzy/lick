@@ -1,5 +1,6 @@
 #ifndef LICK_H
 #define LICK_H 1
+#include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
 #include <uthash/uthash.h>

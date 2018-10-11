@@ -15,7 +15,7 @@ def build(bld):
     bld.program(target="lick",
                 includes = incs,
                 source = sources+["src/interpreter.cpp"])
-    bld.program(target="tests",
+    bld.program(target="lick_test",
                 includes = incs,
                 source = sources+["src/tests.cpp"])
 
