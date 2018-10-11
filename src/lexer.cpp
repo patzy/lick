@@ -15,7 +15,7 @@ make_token(token_type type,const char* start,const char* end) {
 bool
 is_delim(char c) {
   return (c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == '(' || c == ')' ||
-          c == '\'');
+          c == '\'' || c == '\"' || c == ';');
 }
 
 token_t*
@@ -33,23 +33,25 @@ tokenize(const char* str,size_t len) {
   while (i<len) {
     char c = str[i];
     // in a string skip until end quote
+    if (string_start != -1 && c != '\"') {
+      i++;
+      continue;
+    }
     // in a comment skip until EOL
-    // skip delimiters
+    if (comment_start != -1 && c != '\r' && c != '\n') {
+      i++;
+      continue;
+    }
+    // reached a delimiter
     if (is_delim(c)) {
+      // read atom
       if (atom_start != -1) {
         token_t *tok = make_token(TOK_ATOM,str+atom_start,str+i);
         cur_tok->next = tok;
         cur_tok = tok;
         atom_start = -1;
       }
-      if ((c == '\r' || c == '\n') && comment_start != -1) {
-        token_t *tok = make_token(TOK_COMMENT,str+comment_start,str+i+1);
-        cur_tok->next = tok;
-        cur_tok = tok;
-        comment_start = -1;
-      }
-    }
-    else {
+      // read string
       if (c == '\"') {
         if (string_start == -1) {
           string_start = i;
@@ -61,34 +63,38 @@ tokenize(const char* str,size_t len) {
           string_start = -1;
         }
       }
-      else if (string_start == -1 && c == ';') {
-        if (atom_start != -1) {
-          token_t *tok = make_token(TOK_ATOM,str+atom_start,str+i);
-          cur_tok->next = tok;
-          cur_tok = tok;
-          atom_start = -1;
-        }
+      // read comment
+      if (c == ';') {
         comment_start = i;
       }
-      else if ((string_start == -1) && (comment_start == -1) && (atom_start == -1)) {
-        atom_start = i;
+      if ((c == '\r' || c == '\n') && comment_start != -1) {
+        token_t *tok = make_token(TOK_COMMENT,str+comment_start,str+i+1);
+        cur_tok->next = tok;
+        cur_tok = tok;
+        comment_start = -1;
       }
-    }
-    if (comment_start == -1) {
+      // read left paren
       if (c == '(') {
         token_t *tok = make_token(TOK_LPAREN,str+i,str+i+1);
         cur_tok->next = tok;
         cur_tok = tok;
       }
+      // read right paren
       if (c == ')') {
         token_t *tok = make_token(TOK_RPAREN,str+i,str+i+1);
         cur_tok->next = tok;
         cur_tok = tok;
       }
+      // read quote
       if (c == '\'') {
         token_t *tok = make_token(TOK_QUOTE,str+i,str+i+1);
         cur_tok->next = tok;
         cur_tok = tok;
+      }
+    }
+    else {
+      if (atom_start == -1) {
+        atom_start = i;
       }
     }
     ++i;

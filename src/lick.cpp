@@ -438,6 +438,9 @@ lick_parse_list(token_t* token,token_t **next_tok) {
       cur_tok = next;
       break;
     }
+    case TOK_COMMENT:
+      cur_tok = cur_tok->next;
+      break;
     default:
       printf("Invalid token\n");
       return NULL;
